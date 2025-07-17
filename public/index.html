@@ -1,253 +1,205 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Catálogo de Jogos</title>
-  <style>
-    /* Estilos básicos para uma melhor visualização */
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 25px; background-color: #eef1f5; color: #333; }
-    h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 20px; }
-    form { background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 30px; }
-    input[type="text"], input[type="number"] {
-      width: calc(100% - 22px);
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #c0d0e0;
-      border-radius: 6px;
-      box-sizing: border-box; /* Garante que padding e border sejam incluídos na largura */
-    }
-    button {
-      padding: 12px 20px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
-      margin-right: 8px; /* Espaçamento entre botões */
-    }
-    button:hover { background-color: #2980b9; }
-    button.delete { background-color: #e74c3c; }
-    button.delete:hover { background-color: #c0392b; }
-    button.edit { background-color: #f39c12; }
-    button.edit:hover { background-color: #e67e22; }
-
-    #lista-jogos { list-style: none; padding: 0; }
-    #lista-jogos li {
-      background: #ffffff;
-      padding: 15px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      display: flex;
-      flex-wrap: wrap; /* Permite que os itens quebrem linha */
-      align-items: center;
-      gap: 15px; /* Espaçamento entre os elementos dentro do item da lista */
-    }
-    #lista-jogos li span { flex-grow: 1; } /* Faz o texto ocupar o espaço disponível */
-    #lista-jogos li strong { color: #34495e; font-size: 1.1em; }
-    /* Estilo para inputs de edição dentro da lista, se aplicável */
-    .edit-mode input { width: auto; margin: 0 5px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Catálogo de Jogos</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Meu Catálogo de Jogos</h1>
+    <h1>Meu Catálogo de Jogos</h1>
 
-  <h2>Adicionar Jogo</h2>
-  <form id="form-adicionar">
-    <input type="text" id="nome-add" name="nome" placeholder="Nome do Jogo" required />
-    <input type="text" id="plataforma-add" name="plataforma" placeholder="Plataforma" required />
-    <input type="text" id="genero-add" name="genero" placeholder="Gênero" required />
-    <input type="number" id="ano-add" name="ano" placeholder="Ano de Lançamento" required />
-    <button type="submit">Adicionar Jogo</button>
-  </form>
+    <h2>Adicionar Jogo</h2>
+    <form id="form-adicionar">
+        <input type="text" id="nome-add" name="nome" placeholder="Nome do Jogo" required />
+        <input type="text" id="plataforma-add" name="plataforma" placeholder="Plataforma" required />
+        <input type="text" id="genero-add" name="genero" placeholder="Gênero" required />
+        <input type="number" id="ano-add" name="ano" placeholder="Ano de Lançamento" required />
+        <button type="submit">Adicionar Jogo</button>
+    </form>
 
-  <h2>Jogos Cadastrados</h2>
-  <ul id="lista-jogos"></ul>
+    <h2>Jogos Cadastrados</h2>
+    <ul id="lista-jogos"></ul>
 
-  <script>
-    const listaJogos = document.getElementById('lista-jogos');
-    const formAdicionar = document.getElementById('form-adicionar');
+    <script>
+        const listaJogos = document.getElementById('lista-jogos');
+        const formAdicionar = document.getElementById('form-adicionar');
 
+        // ==================================================================// 
+        //                             
+        //     Função assíncrona para buscar e exibir todos os jogos         
+        //                             
+        //================================================================= //
+        async function carregarJogos() {
+            try {
+                const response = await fetch('/jogos');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const jogos = await response.json();
 
-    // ==================================================================//  
-    //                                                                   //
-    //     Função assíncrona para buscar e exibir todos os jogos         //
-    //                                                                   //
-    //================================================================= //
-    async function carregarJogos() {
-      try {
-        const response = await fetch('/jogos');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+                listaJogos.innerHTML = ''; // Limpa a lista atual para recarregar
+
+                jogos.forEach(jogo => {
+                    const item = document.createElement('li');
+                    item.setAttribute('data-id', jogo.id); // Adiciona um atributo para fácil referência
+                    item.innerHTML = `
+                        <span>
+                            <strong>${jogo.nome}</strong> - ${jogo.plataforma} - ${jogo.genero} (${jogo.ano})
+                        </span>
+                        <button class="edit" onclick="habilitarEdicao(${jogo.id}, this)">✏️ Editar</button>
+                        <button class="delete" onclick="deletarJogo(${jogo.id})">🗑️ Excluir</button>
+                    `;
+                    listaJogos.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar jogos:', error);
+                alert('Não foi possível carregar os jogos. Verifique o servidor.');
+            }
         }
-        const jogos = await response.json();
-        
-        listaJogos.innerHTML = ''; // Limpa a lista atual para recarregar
-        
-        jogos.forEach(jogo => {
-          const item = document.createElement('li');
-          item.setAttribute('data-id', jogo.id); // Adiciona um atributo para fácil referência
-          item.innerHTML = `
-            <span>
-              <strong>${jogo.nome}</strong> - ${jogo.plataforma} - ${jogo.genero} (${jogo.ano})
-            </span>
-            <button class="edit" onclick="habilitarEdicao(${jogo.id}, this)">✏️ Editar</button>
-            <button class="delete" onclick="deletarJogo(${jogo.id})">🗑️ Excluir</button>
-          `;
-          listaJogos.appendChild(item);
+
+        // ==================================================================// 
+        //                             
+        //           FUNÇÃO PARA ADICIONAR NOVO JOGO                         
+        //                             
+        //================================================================= //
+        formAdicionar.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Impede o recarregamento da página
+
+            const dadosJogo = {
+                nome: document.getElementById('nome-add').value,
+                plataforma: document.getElementById('plataforma-add').value,
+                genero: document.getElementById('genero-add').value,
+                ano: parseInt(document.getElementById('ano-add').value)
+            };
+
+            try {
+                const response = await fetch('/jogos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosJogo)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message || 'Jogo adicionado com sucesso!');
+                    formAdicionar.reset(); // Limpa o formulário
+                    carregarJogos(); // Recarrega a lista para mostrar o novo jogo
+                } else {
+                    throw new Error(result.error || 'Erro ao adicionar jogo.');
+                }
+            } catch (error) {
+                console.error('Erro ao adicionar jogo:', error);
+                alert('Erro ao adicionar jogo: ' + error.message);
+            }
         });
-      } catch (error) {
-        console.error('Erro ao carregar jogos:', error);
-        alert('Não foi possível carregar os jogos. Verifique o servidor.');
-      }
-    }
 
+        // ==================================================================// 
+        //                             
+        //           FUNÇÃO PARA DELETAR UM JOGO                             
+        //                             
+        //================================================================= //
+        async function deletarJogo(id) {
+            if (!confirm('Tem certeza que deseja excluir este jogo?')) {
+                return; // Cancela se o usuário não confirmar
+            }
 
-     // ==================================================================//  
-    //                                                                   //
-    //               FUNÇÃO PARA ADICIONAR NOVO JOGO                     //
-    //                                                                   //
-    //================================================================= //
-    formAdicionar.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Impede o recarregamento da página
+            try {
+                const response = await fetch(`/jogos/${id}`, { method: 'DELETE' });
+                const result = await response.json();
 
-      const dadosJogo = {
-        nome: document.getElementById('nome-add').value,
-        plataforma: document.getElementById('plataforma-add').value,
-        genero: document.getElementById('genero-add').value,
-        ano: parseInt(document.getElementById('ano-add').value)
-      };
-
-      try {
-        const response = await fetch('/jogos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dadosJogo)
-        });
-        const result = await response.json();
-
-        if (response.ok) {
-          alert(result.message || 'Jogo adicionado com sucesso!');
-          formAdicionar.reset(); // Limpa o formulário
-          carregarJogos(); // Recarrega a lista para mostrar o novo jogo
-        } else {
-          throw new Error(result.error || 'Erro ao adicionar jogo.');
+                if (response.ok) {
+                    alert(result.message || 'Jogo excluído com sucesso!');
+                    carregarJogos(); // Recarrega a lista após a exclusão
+                } else {
+                    throw new Error(result.error || 'Erro ao excluir jogo.');
+                }
+            } catch (error) {
+                console.error('Erro ao deletar jogo:', error);
+                alert('Erro ao deletar jogo: ' + error.message);
+            }
         }
-      } catch (error) {
-        console.error('Erro ao adicionar jogo:', error);
-        alert('Erro ao adicionar jogo: ' + error.message);
-      }
-    });
 
-     // ==================================================================//  
-    //                                                                   //
-    //               FUNÇÃO PARA DELETAR UM JOGO                         //
-    //                                                                   //
-    //================================================================= //
-    async function deletarJogo(id) {
-      if (!confirm('Tem certeza que deseja excluir este jogo?')) {
-        return; // Cancela se o usuário não confirmar
-      }
+        // ==================================================================// 
+        //                             
+        //           FUNÇÃO PARA EDITAR DADOS DE UM JOGO                     
+        //                             
+        //================================================================= //
 
-      try {
-        const response = await fetch(`/jogos/${id}`, { method: 'DELETE' });
-        const result = await response.json();
+        // Habilita o modo de edição para um item da lista
+        async function habilitarEdicao(id, editButton) {
+            const listItem = editButton.closest('li'); // Encontra o <li> pai
+            const spanText = listItem.querySelector('span'); // Pega o span que contém o texto atual
 
-        if (response.ok) {
-          alert(result.message || 'Jogo excluído com sucesso!');
-          carregarJogos(); // Recarrega a lista após a exclusão
-        } else {
-          throw new Error(result.error || 'Erro ao excluir jogo.');
+            // Pega os dados atuais do jogo para preencher os campos de edição
+            const currentText = spanText.textContent;
+            const parts = currentText.split(' - ');
+            const nome = parts[0].trim().replace('**', ''); // Remove os ** do nome
+            const plataforma = parts[1].trim();
+            const genero = parts[2].trim().split(' ')[0];
+            const ano = parseInt(parts[2].trim().match(/\((\d+)\)/)[1]); // Extrai o ano do parêntese
+
+            // Altera o HTML do item da lista para incluir campos de input
+            listItem.innerHTML = `
+                <input type="text" id="edit-nome-${id}" value="${nome}" />
+                <input type="text" id="edit-plataforma-${id}" value="${plataforma}" />
+                <input type="text" id="edit-genero-${id}" value="${genero}" />
+                <input type="number" id="edit-ano-${id}" value="${ano}" />
+                <button onclick="salvarEdicao(${id})" class="edit">💾 Salvar</button>
+                <button onclick="carregarJogos()">❌ Cancelar</button>
+            `;
+            listItem.classList.add('edit-mode'); // Adiciona uma classe para estilos de edição
         }
-      } catch (error) {
-        console.error('Erro ao deletar jogo:', error);
-        alert('Erro ao deletar jogo: ' + error.message);
-      }
-    }
 
-     // ==================================================================//  
-    //                                                                   //
-    //               FUNÇÃO PARA EDITAR DADOS DE UM JOGO                  //
-    //                                                                   //
-    //================================================================= //
+        // ==================================================================// 
+        //                             
+        //           SALVAR EDIÇÕES DE UM JOGO                               
+        //                             
+        //================================================================= //
+        async function salvarEdicao(id) {
+            const novoNome = document.getElementById(`edit-nome-${id}`).value;
+            const novaPlataforma = document.getElementById(`edit-plataforma-${id}`).value;
+            const novoGenero = document.getElementById(`edit-genero-${id}`).value;
+            const novoAno = parseInt(document.getElementById(`edit-ano-${id}`).value);
 
-    // Habilita o modo de edição para um item da lista
-    async function habilitarEdicao(id, editButton) {
-      const listItem = editButton.closest('li'); // Encontra o <li> pai
-      const spanText = listItem.querySelector('span'); // Pega o span que contém o texto atual
+            if (!novoNome || !novaPlataforma || !novoGenero || isNaN(novoAno)) {
+                alert('Por favor, preencha todos os campos corretamente para editar.');
+                return;
+            }
 
-      // Pega os dados atuais do jogo para preencher os campos de edição
-      const currentText = spanText.textContent;
-      const parts = currentText.split(' - ');
-      const nome = parts[0].trim().replace('**', ''); // Remove os ** do nome
-      const plataforma = parts[1].trim();
-      const genero = parts[2].trim().split(' ')[0];
-      const ano = parseInt(parts[2].trim().match(/\((\d+)\)/)[1]); // Extrai o ano do parêntese
+            const dadosAtualizados = {
+                nome: novoNome,
+                plataforma: novaPlataforma,
+                genero: novoGenero,
+                ano: novoAno
+            };
 
+            try {
+                const response = await fetch(`/jogos/${id}`, {
+                    method: 'PUT', // Usando PUT para atualização completa
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosAtualizados)
+                });
+                const result = await response.json();
 
-      // Altera o HTML do item da lista para incluir campos de input
-      listItem.innerHTML = `
-        <input type="text" id="edit-nome-${id}" value="${nome}" />
-        <input type="text" id="edit-plataforma-${id}" value="${plataforma}" />
-        <input type="text" id="edit-genero-${id}" value="${genero}" />
-        <input type="number" id="edit-ano-${id}" value="${ano}" />
-        <button onclick="salvarEdicao(${id})" class="edit">💾 Salvar</button>
-        <button onclick="carregarJogos()">❌ Cancelar</button>
-      `;
-      listItem.classList.add('edit-mode'); // Adiciona uma classe para estilos de edição
-    }
-
-     // ==================================================================//  
-    //                                                                   //
-    //               SALVAR EDIÇÕES DE UM JOGO                            //
-    //                                                                   //
-    //================================================================= //
-    async function salvarEdicao(id) {
-      const novoNome = document.getElementById(`edit-nome-${id}`).value;
-      const novaPlataforma = document.getElementById(`edit-plataforma-${id}`).value;
-      const novoGenero = document.getElementById(`edit-genero-${id}`).value;
-      const novoAno = parseInt(document.getElementById(`edit-ano-${id}`).value);
-
-      if (!novoNome || !novaPlataforma || !novoGenero || isNaN(novoAno)) {
-        alert('Por favor, preencha todos os campos corretamente para editar.');
-        return;
-      }
-
-      const dadosAtualizados = {
-        nome: novoNome,
-        plataforma: novaPlataforma,
-        genero: novoGenero,
-        ano: novoAno
-      };
-
-      try {
-        const response = await fetch(`/jogos/${id}`, {
-          method: 'PUT', // Usando PUT para atualização completa
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dadosAtualizados)
-        });
-        const result = await response.json();
-
-        if (response.ok) {
-          alert(result.message || 'Jogo atualizado com sucesso!');
-          carregarJogos(); // Recarrega a lista para mostrar as mudanças
-        } else {
-          throw new Error(result.error || 'Erro ao atualizar jogo.');
+                if (response.ok) {
+                    alert(result.message || 'Jogo atualizado com sucesso!');
+                    carregarJogos(); // Recarrega a lista para mostrar as mudanças
+                } else {
+                    throw new Error(result.error || 'Erro ao atualizar jogo.');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar edição:', error);
+                alert('Erro ao salvar edição: ' + error.message);
+            }
         }
-      } catch (error) {
-        console.error('Erro ao salvar edição:', error);
-        alert('Erro ao salvar edição: ' + error.message);
-      }
-    }
 
-     // ==================================================================//  
-    //               CARREGA OS JOGOS QUANDO A PAGINA                     //
-    //               É COMPLETAMENTE CARREGADA                           //
-    //                                                                   //
-    //================================================================= //
-    document.addEventListener('DOMContentLoaded', carregarJogos);
-  </script>
+        // ==================================================================// 
+        //                             
+        //           CARREGA OS JOGOS QUANDO A PAGINA                        
+        //           É COMPLETAMENTE CARREGADA                               
+        //                             
+        //================================================================= //
+        document.addEventListener('DOMContentLoaded', carregarJogos);
+    </script>
 </body>
 </html>
